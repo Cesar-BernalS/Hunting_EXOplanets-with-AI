@@ -1,0 +1,274 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Registrarse - ExoPlanet AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="bi bi-person-plus text-primary"></i>
+                    Crear Cuenta
+                </h1>
+                <p class="lead text-muted">
+                    Únete a nuestra comunidad de exploradores de exoplanetas
+                </p>
+            </div>
+            
+            <!-- Registration Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-person-circle"></i> Información Personal
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="registerForm">
+                        {% csrf_token %}
+                        
+                        <div class="row g-3">
+                            <!-- Username and Email -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.username.id_for_label }}" class="form-label">
+                                        {{ form.username.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.username }}
+                                    {% if form.username.errors %}
+                                        <div class="text-danger small">{{ form.username.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">
+                                        {{ form.email.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                        <div class="text-danger small">{{ form.email.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Names -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                        {{ form.first_name.label }}
+                                    </label>
+                                    {{ form.first_name }}
+                                    {% if form.first_name.errors %}
+                                        <div class="text-danger small">{{ form.first_name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                        {{ form.last_name.label }}
+                                    </label>
+                                    {{ form.last_name }}
+                                    {% if form.last_name.errors %}
+                                        <div class="text-danger small">{{ form.last_name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- User Type -->
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.user_type.id_for_label }}" class="form-label">
+                                        {{ form.user_type.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.user_type }}
+                                    {% if form.user_type.errors %}
+                                        <div class="text-danger small">{{ form.user_type.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        <strong>Investigador:</strong> Puede subir datasets y gestionar datos<br>
+                                        <strong>Novato:</strong> Puede explorar y analizar datos existentes
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Institution -->
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.institution.id_for_label }}" class="form-label">
+                                        {{ form.institution.label }}
+                                    </label>
+                                    {{ form.institution }}
+                                    {% if form.institution.errors %}
+                                        <div class="text-danger small">{{ form.institution.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Bio -->
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.bio.id_for_label }}" class="form-label">
+                                        {{ form.bio.label }}
+                                    </label>
+                                    {{ form.bio }}
+                                    {% if form.bio.errors %}
+                                        <div class="text-danger small">{{ form.bio.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Passwords -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.password1.id_for_label }}" class="form-label">
+                                        {{ form.password1.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.password1 }}
+                                    {% if form.password1.errors %}
+                                        <div class="text-danger small">{{ form.password1.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.password2.id_for_label }}" class="form-label">
+                                        {{ form.password2.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.password2 }}
+                                    {% if form.password2.errors %}
+                                        <div class="text-danger small">{{ form.password2.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="registerBtn">
+                                <i class="bi bi-person-plus"></i> Crear Cuenta
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Login Link -->
+            <div class="card mt-4">
+                <div class="card-body text-center">
+                    <p class="mb-0">
+                        ¿Ya tienes una cuenta? 
+                        <a href="{% url 'login' %}" class="text-decoration-none">
+                            <strong>Inicia sesión aquí</strong>
+                        </a>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- User Types Comparison -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> Comparación de Tipos de Usuario
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-person-badge"></i> Investigador
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled small">
+                                        <li><i class="bi bi-check-circle text-success"></i> Subir datasets CSV/Excel</li>
+                                        <li><i class="bi bi-check-circle text-success"></i> Gestionar datos de exoplanetas</li>
+                                        <li><i class="bi bi-check-circle text-success"></i> Analizar candidatos con IA</li>
+                                        <li><i class="bi bi-check-circle text-success"></i> Ver estadísticas avanzadas</li>
+                                        <li><i class="bi bi-check-circle text-success"></i> Acceso completo a la plataforma</li>
+                                    </ul>
+                                    <div class="alert alert-info small mb-0">
+                                        <strong>Ideal para:</strong> Astrónomos, investigadores, estudiantes de posgrado
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-person"></i> Novato
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled small">
+                                        <li><i class="bi bi-check-circle text-success"></i> Explorar candidatos existentes</li>
+                                        <li><i class="bi bi-check-circle text-success"></i> Analizar con IA</li>
+                                        <li><i class="bi bi-check-circle text-success"></i> Ver visualizaciones</li>
+                                        <li><i class="bi bi-check-circle text-success"></i> Aprender sobre exoplanetas</li>
+                                        <li><i class="bi bi-x-circle text-muted"></i> No puede subir datos</li>
+                                    </ul>
+                                    <div class="alert alert-warning small mb-0">
+                                        <strong>Ideal para:</strong> Estudiantes, aficionados, curiosos del espacio
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('registerForm');
+        const registerBtn = document.getElementById('registerBtn');
+        
+        form.addEventListener('submit', function(e) {
+            // Mostrar spinner de carga
+            registerBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creando cuenta...';
+            registerBtn.disabled = true;
+        });
+        
+        // Auto-focus en el campo de usuario
+        const usernameField = document.getElementById('{{ form.username.id_for_label }}');
+        if (usernameField) {
+            usernameField.focus();
+        }
+        
+        // Validación de contraseñas en tiempo real
+        const password1 = document.getElementById('{{ form.password1.id_for_label }}');
+        const password2 = document.getElementById('{{ form.password2.id_for_label }}');
+        
+        function validatePasswords() {
+            if (password1.value && password2.value) {
+                if (password1.value !== password2.value) {
+                    password2.classList.add('is-invalid');
+                    password2.classList.remove('is-valid');
+                } else {
+                    password2.classList.remove('is-invalid');
+                    password2.classList.add('is-valid');
+                }
+            }
+        }
+        
+        password1.addEventListener('input', validatePasswords);
+        password2.addEventListener('input', validatePasswords);
+    });
+</script>
+{% endblock %}

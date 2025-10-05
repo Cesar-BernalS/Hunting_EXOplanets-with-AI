@@ -1,0 +1,118 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Datasets de Exoplanetas - ExoPlanet AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <h1 class="display-4 fw-bold mb-3">
+                <i class="bi bi-database text-primary"></i>
+                Datasets de Exoplanetas
+            </h1>
+            <p class="lead text-muted">
+                Explora los datasets disponibles de las misiones espaciales de la NASA.
+            </p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <a href="{% url 'upload_dataset' %}" class="btn btn-primary">
+                <i class="bi bi-upload"></i> Subir Dataset
+            </a>
+        </div>
+    </div>
+    
+    <!-- Datasets Grid -->
+    {% if dataset_stats %}
+    <div class="row g-4">
+        {% for stats in dataset_stats %}
+        <div class="col-lg-6 col-xl-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-satellite"></i> {{ stats.dataset.mission }}
+                    </h5>
+                    <span class="badge bg-info">{{ stats.dataset.name }}</span>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ stats.dataset.description|truncatewords:25 }}</p>
+                    
+                    <!-- Statistics -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h5 text-primary">{{ stats.total_candidates }}</div>
+                                <small class="text-muted">Total</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h5 text-success">{{ stats.confirmed }}</div>
+                                <small class="text-muted">Confirmados</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h5 text-warning">{{ stats.candidates }}</div>
+                                <small class="text-muted">Candidatos</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h5 text-danger">{{ stats.false_positives }}</div>
+                                <small class="text-muted">Falsos Positivos</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Success Rate -->
+                    {% if stats.total_candidates > 0 %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">Tasa de Éxito</small>
+                            <small class="text-muted">
+                                {% widthratio stats.confirmed stats.total_candidates 100 %}%
+                            </small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" 
+                                 style="width: {% widthratio stats.confirmed stats.total_candidates 100 %}%">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="bi bi-calendar"></i> 
+                            {{ stats.dataset.created_at|date:"d/m/Y" }}
+                        </small>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ stats.dataset.source_url }}" 
+                               class="btn btn-outline-light" target="_blank" title="Ver fuente">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                            <a href="{% url 'candidate_list' %}?dataset={{ stats.dataset.id }}" 
+                               class="btn btn-outline-primary" title="Ver candidatos">
+                                <i class="bi bi-search"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-database display-1 text-muted"></i>
+        <h4 class="text-muted mt-3">No hay datasets disponibles</h4>
+        <p class="text-muted">Sube el primer dataset para comenzar.</p>
+        <a href="{% url 'upload_dataset' %}" class="btn btn-primary">
+            <i class="bi bi-upload"></i> Subir Dataset
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

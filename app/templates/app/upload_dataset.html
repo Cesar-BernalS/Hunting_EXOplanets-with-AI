@@ -1,0 +1,243 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Subir Dataset - ExoPlanet AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="bi bi-upload text-primary"></i>
+                    Subir Dataset
+                </h1>
+                <p class="lead text-muted">
+                    Sube un dataset de exoplanetas en formato CSV o Excel para analizarlo con nuestro sistema de IA.
+                </p>
+            </div>
+            
+            <!-- Upload Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-file-earmark-arrow-up"></i> Información del Dataset
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="uploadForm">
+                        {% csrf_token %}
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                                        {{ form.name.label }}
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.help_text %}
+                                        <div class="form-text">{{ form.name.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.name.errors %}
+                                        <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.mission.id_for_label }}" class="form-label">
+                                        {{ form.mission.label }}
+                                    </label>
+                                    {{ form.mission }}
+                                    {% if form.mission.help_text %}
+                                        <div class="form-text">{{ form.mission.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.mission.errors %}
+                                        <div class="text-danger small">{{ form.mission.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                                        {{ form.description.label }}
+                                    </label>
+                                    {{ form.description }}
+                                    {% if form.description.help_text %}
+                                        <div class="form-text">{{ form.description.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.description.errors %}
+                                        <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.source_url.id_for_label }}" class="form-label">
+                                        {{ form.source_url.label }}
+                                    </label>
+                                    {{ form.source_url }}
+                                    {% if form.source_url.help_text %}
+                                        <div class="form-text">{{ form.source_url.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.source_url.errors %}
+                                        <div class="text-danger small">{{ form.source_url.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.file.id_for_label }}" class="form-label">
+                                        {{ form.file.label }}
+                                    </label>
+                                    {{ form.file }}
+                                    {% if form.file.help_text %}
+                                        <div class="form-text">{{ form.file.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.file.errors %}
+                                        <div class="text-danger small">{{ form.file.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                <i class="bi bi-upload"></i> Subir Dataset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Instructions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> Instrucciones para el Archivo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Formato Requerido</h6>
+                            <ul class="list-unstyled small">
+                                <li><i class="bi bi-check-circle text-success"></i> Archivos CSV o Excel (.xlsx, .xls)</li>
+                                <li><i class="bi bi-check-circle text-success"></i> Máximo 10MB de tamaño</li>
+                                <li><i class="bi bi-check-circle text-success"></i> Primera fila debe contener los nombres de las columnas</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Columnas Esperadas</h6>
+                            <ul class="list-unstyled small">
+                                <li><code>name</code> - Nombre del candidato</li>
+                                <li><code>orbital_period</code> - Período orbital (días)</li>
+                                <li><code>planetary_radius</code> - Radio planetario (R⊕)</li>
+                                <li><code>classification</code> - Clasificación (opcional)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <h6><i class="bi bi-lightbulb"></i> Consejo</h6>
+                        <p class="mb-0">
+                            Si tu archivo no tiene todas las columnas requeridas, el sistema intentará 
+                            mapear automáticamente las columnas disponibles. Puedes editar la información 
+                            después de subir el archivo.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Example Dataset -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-download"></i> Dataset de Ejemplo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Descarga nuestro dataset de ejemplo para ver el formato correcto:
+                    </p>
+                    <a href="#" class="btn btn-outline-light" onclick="downloadExample()">
+                        <i class="bi bi-download"></i> Descargar Dataset de Ejemplo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const fileInput = document.querySelector('input[type="file"]');
+        
+        form.addEventListener('submit', function(e) {
+            // Mostrar spinner de carga
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Subiendo...';
+            submitBtn.disabled = true;
+        });
+        
+        // Validar archivo seleccionado
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                // Validar tipo de archivo
+                const allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+                if (!allowedTypes.includes(file.type) && !file.name.match(/\.(csv|xlsx|xls)$/i)) {
+                    alert('Por favor selecciona un archivo CSV o Excel válido.');
+                    this.value = '';
+                    return;
+                }
+                
+                // Validar tamaño (10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('El archivo es demasiado grande. Máximo 10MB.');
+                    this.value = '';
+                    return;
+                }
+                
+                // Mostrar información del archivo
+                const fileInfo = document.createElement('div');
+                fileInfo.className = 'mt-2 small text-muted';
+                fileInfo.innerHTML = `
+                    <i class="bi bi-file-earmark"></i> 
+                    ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)
+                `;
+                
+                // Remover información anterior si existe
+                const existingInfo = this.parentNode.querySelector('.file-info');
+                if (existingInfo) {
+                    existingInfo.remove();
+                }
+                
+                fileInfo.className += ' file-info';
+                this.parentNode.appendChild(fileInfo);
+            }
+        });
+    });
+    
+    function downloadExample() {
+        // Crear un CSV de ejemplo
+        const csvContent = `name,orbital_period,transit_duration,planetary_radius,stellar_radius,stellar_mass,stellar_effective_temperature,transit_depth,impact_parameter,equilibrium_temperature,classification
+Kepler-442b,112.305,2.5,1.34,0.6,0.61,4402,0.0001,0.3,233,CONFIRMED
+Kepler-186f,129.9,3.0,1.11,0.47,0.48,3788,0.0002,0.2,188,CONFIRMED
+TOI-715b,19.3,1.8,1.55,0.61,0.64,3240,0.0003,0.4,174,CANDIDATE`;
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'exoplanet_dataset_ejemplo.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+    }
+</script>
+{% endblock %}

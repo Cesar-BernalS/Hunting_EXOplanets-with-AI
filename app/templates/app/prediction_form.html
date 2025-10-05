@@ -1,0 +1,299 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Predicción de Exoplanetas - ExoPlanet AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="bi bi-cpu text-warning"></i>
+                    Predicción de Exoplanetas
+                </h1>
+                <p class="lead text-muted">
+                    Ingresa los parámetros de un candidato a exoplaneta y nuestro sistema de IA 
+                    determinará la probabilidad de que sea un planeta real.
+                </p>
+            </div>
+            
+            <!-- Prediction Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-clipboard-data"></i> Parámetros del Candidato
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="predictionForm">
+                        {% csrf_token %}
+                        
+                        <!-- Información Básica -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="bi bi-info-circle"></i> Información Básica
+                                </h5>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                                        {{ form.name.label }}
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.help_text %}
+                                        <div class="form-text">{{ form.name.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.name.errors %}
+                                        <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Características Físicas -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="bi bi-globe"></i> Características Físicas
+                                </h5>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.orbital_period.id_for_label }}" class="form-label">
+                                        {{ form.orbital_period.label }}
+                                    </label>
+                                    {{ form.orbital_period }}
+                                    {% if form.orbital_period.help_text %}
+                                        <div class="form-text">{{ form.orbital_period.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.orbital_period.errors %}
+                                        <div class="text-danger small">{{ form.orbital_period.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.transit_duration.id_for_label }}" class="form-label">
+                                        {{ form.transit_duration.label }}
+                                    </label>
+                                    {{ form.transit_duration }}
+                                    {% if form.transit_duration.help_text %}
+                                        <div class="form-text">{{ form.transit_duration.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.transit_duration.errors %}
+                                        <div class="text-danger small">{{ form.transit_duration.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.planetary_radius.id_for_label }}" class="form-label">
+                                        {{ form.planetary_radius.label }}
+                                    </label>
+                                    {{ form.planetary_radius }}
+                                    {% if form.planetary_radius.help_text %}
+                                        <div class="form-text">{{ form.planetary_radius.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.planetary_radius.errors %}
+                                        <div class="text-danger small">{{ form.planetary_radius.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.stellar_radius.id_for_label }}" class="form-label">
+                                        {{ form.stellar_radius.label }}
+                                    </label>
+                                    {{ form.stellar_radius }}
+                                    {% if form.stellar_radius.help_text %}
+                                        <div class="form-text">{{ form.stellar_radius.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.stellar_radius.errors %}
+                                        <div class="text-danger small">{{ form.stellar_radius.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.stellar_mass.id_for_label }}" class="form-label">
+                                        {{ form.stellar_mass.label }}
+                                    </label>
+                                    {{ form.stellar_mass }}
+                                    {% if form.stellar_mass.help_text %}
+                                        <div class="form-text">{{ form.stellar_mass.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.stellar_mass.errors %}
+                                        <div class="text-danger small">{{ form.stellar_mass.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.stellar_effective_temperature.id_for_label }}" class="form-label">
+                                        {{ form.stellar_effective_temperature.label }}
+                                    </label>
+                                    {{ form.stellar_effective_temperature }}
+                                    {% if form.stellar_effective_temperature.help_text %}
+                                        <div class="form-text">{{ form.stellar_effective_temperature.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.stellar_effective_temperature.errors %}
+                                        <div class="text-danger small">{{ form.stellar_effective_temperature.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Parámetros de Tránsito -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="bi bi-graph-up"></i> Parámetros de Tránsito
+                                </h5>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.transit_depth.id_for_label }}" class="form-label">
+                                        {{ form.transit_depth.label }}
+                                    </label>
+                                    {{ form.transit_depth }}
+                                    {% if form.transit_depth.help_text %}
+                                        <div class="form-text">{{ form.transit_depth.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.transit_depth.errors %}
+                                        <div class="text-danger small">{{ form.transit_depth.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.impact_parameter.id_for_label }}" class="form-label">
+                                        {{ form.impact_parameter.label }}
+                                    </label>
+                                    {{ form.impact_parameter }}
+                                    {% if form.impact_parameter.help_text %}
+                                        <div class="form-text">{{ form.impact_parameter.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.impact_parameter.errors %}
+                                        <div class="text-danger small">{{ form.impact_parameter.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.equilibrium_temperature.id_for_label }}" class="form-label">
+                                        {{ form.equilibrium_temperature.label }}
+                                    </label>
+                                    {{ form.equilibrium_temperature }}
+                                    {% if form.equilibrium_temperature.help_text %}
+                                        <div class="form-text">{{ form.equilibrium_temperature.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.equilibrium_temperature.errors %}
+                                        <div class="text-danger small">{{ form.equilibrium_temperature.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                <i class="bi bi-cpu"></i> Analizar con IA
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Information Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> Información sobre los Parámetros
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Características Físicas</h6>
+                            <ul class="list-unstyled small">
+                                <li><strong>Período Orbital:</strong> Tiempo que tarda el planeta en completar una órbita alrededor de su estrella.</li>
+                                <li><strong>Duración del Tránsito:</strong> Tiempo que dura el planeta pasando frente a su estrella.</li>
+                                <li><strong>Radio Planetario:</strong> Tamaño del planeta comparado con la Tierra.</li>
+                                <li><strong>Radio Estelar:</strong> Tamaño de la estrella comparado con el Sol.</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Parámetros de Tránsito</h6>
+                            <ul class="list-unstyled small">
+                                <li><strong>Profundidad del Tránsito:</strong> Qué tanto disminuye la luz de la estrella durante el tránsito.</li>
+                                <li><strong>Parámetro de Impacto:</strong> Qué tan centrado está el tránsito (0 = perfectamente centrado).</li>
+                                <li><strong>Temperatura de Equilibrio:</strong> Temperatura promedio del planeta.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('predictionForm');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        form.addEventListener('submit', function(e) {
+            // Mostrar spinner de carga
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Analizando...';
+            submitBtn.disabled = true;
+        });
+        
+        // Validación en tiempo real
+        const inputs = form.querySelectorAll('input[type="number"]');
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                validateInput(this);
+            });
+        });
+        
+        function validateInput(input) {
+            const value = parseFloat(input.value);
+            const min = parseFloat(input.getAttribute('min'));
+            const max = parseFloat(input.getAttribute('max'));
+            
+            if (isNaN(value) || value < 0) {
+                input.classList.add('is-invalid');
+                showError(input, 'El valor debe ser mayor que 0');
+            } else if (min !== null && value < min) {
+                input.classList.add('is-invalid');
+                showError(input, `El valor debe ser mayor o igual a ${min}`);
+            } else if (max !== null && value > max) {
+                input.classList.add('is-invalid');
+                showError(input, `El valor debe ser menor o igual a ${max}`);
+            } else {
+                input.classList.remove('is-invalid');
+                hideError(input);
+            }
+        }
+        
+        function showError(input, message) {
+            hideError(input);
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback';
+            errorDiv.textContent = message;
+            input.parentNode.appendChild(errorDiv);
+        }
+        
+        function hideError(input) {
+            const errorDiv = input.parentNode.querySelector('.invalid-feedback');
+            if (errorDiv) {
+                errorDiv.remove();
+            }
+        }
+    });
+</script>
+{% endblock %}

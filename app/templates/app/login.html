@@ -1,0 +1,145 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Iniciar Sesión - ExoPlanet AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="bi bi-box-arrow-in-right text-primary"></i>
+                    Iniciar Sesión
+                </h1>
+                <p class="lead text-muted">
+                    Accede a tu cuenta para explorar y analizar exoplanetas
+                </p>
+            </div>
+            
+            <!-- Login Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-person-circle"></i> Credenciales
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="loginForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">
+                                {{ form.username.label }}
+                            </label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small">{{ form.username.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">
+                                {{ form.password.label }}
+                            </label>
+                            {{ form.password }}
+                            {% if form.password.errors %}
+                                <div class="text-danger small">{{ form.password.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            {{ form.remember_me }}
+                            <label class="form-check-label" for="{{ form.remember_me.id_for_label }}">
+                                {{ form.remember_me.label }}
+                            </label>
+                        </div>
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="loginBtn">
+                                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Register Link -->
+            <div class="card mt-4">
+                <div class="card-body text-center">
+                    <p class="mb-0">
+                        ¿No tienes una cuenta? 
+                        <a href="{% url 'register' %}" class="text-decoration-none">
+                            <strong>Regístrate aquí</strong>
+                        </a>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- User Types Info -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> Tipos de Usuario
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">
+                                <i class="bi bi-person-badge"></i> Investigador
+                            </h6>
+                            <ul class="list-unstyled small">
+                                <li><i class="bi bi-check-circle text-success"></i> Subir datasets CSV/Excel</li>
+                                <li><i class="bi bi-check-circle text-success"></i> Analizar candidatos con IA</li>
+                                <li><i class="bi bi-check-circle text-success"></i> Ver estadísticas avanzadas</li>
+                                <li><i class="bi bi-check-circle text-success"></i> Gestionar datos</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-warning">
+                                <i class="bi bi-person"></i> Novato
+                            </h6>
+                            <ul class="list-unstyled small">
+                                <li><i class="bi bi-check-circle text-success"></i> Explorar candidatos</li>
+                                <li><i class="bi bi-check-circle text-success"></i> Analizar con IA</li>
+                                <li><i class="bi bi-check-circle text-success"></i> Ver visualizaciones</li>
+                                <li><i class="bi bi-check-circle text-success"></i> Aprender sobre exoplanetas</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        
+        form.addEventListener('submit', function(e) {
+            // Mostrar spinner de carga
+            loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Iniciando sesión...';
+            loginBtn.disabled = true;
+        });
+        
+        // Auto-focus en el campo de usuario
+        const usernameField = document.getElementById('{{ form.username.id_for_label }}');
+        if (usernameField) {
+            usernameField.focus();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,266 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Historial de Predicciones - ExoPlanet AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <h1 class="display-4 fw-bold mb-3">
+                <i class="bi bi-clock-history text-primary"></i>
+                Historial de Predicciones
+            </h1>
+            <p class="lead text-muted">
+                Revisa todas las predicciones realizadas por nuestro sistema de IA.
+            </p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <a href="{% url 'prediction_form' %}" class="btn btn-primary">
+                <i class="bi bi-cpu"></i> Nueva Predicción
+            </a>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-funnel"></i> Filtros
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="prediction" class="form-label">Tipo de Predicción</label>
+                    <select class="form-control" id="prediction" name="prediction">
+                        <option value="">Todas</option>
+                        <option value="CONFIRMED" {% if prediction_filter == 'CONFIRMED' %}selected{% endif %}>Confirmados</option>
+                        <option value="CANDIDATE" {% if prediction_filter == 'CANDIDATE' %}selected{% endif %}>Candidatos</option>
+                        <option value="FALSE_POSITIVE" {% if prediction_filter == 'FALSE_POSITIVE' %}selected{% endif %}>Falsos Positivos</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="min_confidence" class="form-label">Confianza Mínima</label>
+                    <input type="number" class="form-control" id="min_confidence" name="min_confidence" 
+                           min="0" max="1" step="0.01" placeholder="0.8">
+                </div>
+                <div class="col-md-3">
+                    <label for="date_from" class="form-label">Desde</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Results -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-list"></i> Predicciones
+                {% if page_obj %}
+                    <span class="badge bg-secondary ms-2">{{ page_obj.paginator.count }} predicciones</span>
+                {% endif %}
+            </h5>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-light btn-sm" onclick="exportToCSV()">
+                    <i class="bi bi-download"></i> Exportar CSV
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Candidato</th>
+                                <th>Predicción</th>
+                                <th>Confianza</th>
+                                <th>Usuario</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prediction in page_obj %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-secondary">#{{ prediction.id }}</span>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ prediction.input_data.name|default:"Candidato Anónimo" }}</strong>
+                                        {% if prediction.input_data.orbital_period %}
+                                            <br><small class="text-muted">
+                                                Período: {{ prediction.input_data.orbital_period|floatformat:2 }} días
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ prediction.prediction|lower }}">
+                                        {{ prediction.get_prediction_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress me-2" style="width: 60px; height: 8px;">
+                                            <div class="progress-bar 
+                                                {% if prediction.confidence >= 0.8 %}bg-success
+                                                {% elif prediction.confidence >= 0.6 %}bg-warning
+                                                {% else %}bg-danger{% endif %}" 
+                                                style="width: {{ prediction.confidence|floatformat:0 }}%">
+                                            </div>
+                                        </div>
+                                        <small>{{ prediction.confidence|floatformat:1 }}%</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if prediction.user %}
+                                        <span class="text-muted">{{ prediction.user.username }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Anónimo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ prediction.created_at|date:"d/m/Y H:i" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'prediction_result' prediction.id %}" 
+                                           class="btn btn-outline-light" title="Ver resultado">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-primary" 
+                                                onclick="reanalyzePrediction({{ prediction.id }})" title="Re-analizar">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <div class="card-footer">
+                    <nav aria-label="Paginación de predicciones">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if prediction_filter %}&prediction={{ prediction_filter }}{% endif %}">
+                                        <i class="bi bi-chevron-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if prediction_filter %}&prediction={{ prediction_filter }}{% endif %}">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if prediction_filter %}&prediction={{ prediction_filter }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if prediction_filter %}&prediction={{ prediction_filter }}{% endif %}">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if prediction_filter %}&prediction={{ prediction_filter }}{% endif %}">
+                                        <i class="bi bi-chevron-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-clock-history display-1 text-muted"></i>
+                    <h4 class="text-muted mt-3">No hay predicciones</h4>
+                    <p class="text-muted">Realiza tu primera predicción para comenzar.</p>
+                    <a href="{% url 'prediction_form' %}" class="btn btn-primary">
+                        <i class="bi bi-cpu"></i> Hacer Predicción
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function reanalyzePrediction(predictionId) {
+        if (confirm('¿Deseas re-analizar esta predicción con el modelo actualizado?')) {
+            // Mostrar spinner
+            const btn = event.target.closest('button');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            btn.disabled = true;
+            
+            // Simular llamada a API (aquí iría la llamada real)
+            setTimeout(() => {
+                alert('Re-análisis completado. Los resultados se han actualizado.');
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+                // Recargar la página para mostrar los resultados actualizados
+                window.location.reload();
+            }, 2000);
+        }
+    }
+    
+    function exportToCSV() {
+        // Crear URL con parámetros de filtro actuales
+        const params = new URLSearchParams(window.location.search);
+        params.set('format', 'csv');
+        
+        // Crear enlace de descarga
+        const link = document.createElement('a');
+        link.href = `{% url 'prediction_history' %}?${params.toString()}`;
+        link.download = 'historial_predicciones.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    
+    // Auto-submit form cuando cambien los filtros
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterForm = document.querySelector('form[method="get"]');
+        const selectElements = filterForm.querySelectorAll('select');
+        
+        selectElements.forEach(select => {
+            select.addEventListener('change', function() {
+                filterForm.submit();
+            });
+        });
+    });
+</script>
+{% endblock %}

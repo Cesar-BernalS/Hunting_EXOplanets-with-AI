@@ -1,0 +1,295 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Inicio - Caza de Exoplanetas con IA{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h1 class="display-4 fw-bold mb-4">
+                    <i class="bi bi-stars text-warning"></i>
+                    Caza de Exoplanetas con IA
+                </h1>
+                <p class="lead mb-5">
+                    Descubre nuevos mundos más allá de nuestro sistema solar utilizando 
+                    inteligencia artificial y datos de las misiones Kepler, K2 y TESS de la NASA.
+                </p>
+                <div class="d-flex flex-wrap justify-content-center gap-3">
+                    <a href="{% url 'prediction_form' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-cpu"></i> Hacer Predicción
+                    </a>
+                    <a href="{% url 'candidate_list' %}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-search"></i> Explorar Candidatos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Statistics Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-3 col-sm-6">
+                <div class="card stats-card text-center h-100">
+                    <div class="card-body">
+                        <div class="display-4 text-warning mb-3">
+                            <i class="bi bi-globe"></i>
+                        </div>
+                        <h3 class="card-title">{{ total_candidates|default:0 }}</h3>
+                        <p class="card-text">Candidatos Analizados</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card stats-card text-center h-100">
+                    <div class="card-body">
+                        <div class="display-4 text-success mb-3">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <h3 class="card-title">{{ confirmed_exoplanets|default:0 }}</h3>
+                        <p class="card-text">Exoplanetas Confirmados</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card stats-card text-center h-100">
+                    <div class="card-body">
+                        <div class="display-4 text-info mb-3">
+                            <i class="bi bi-question-circle"></i>
+                        </div>
+                        <h3 class="card-title">{{ candidates|default:0 }}</h3>
+                        <p class="card-text">Candidatos Planetarios</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card stats-card text-center h-100">
+                    <div class="card-body">
+                        <div class="display-4 text-danger mb-3">
+                            <i class="bi bi-x-circle"></i>
+                        </div>
+                        <h3 class="card-title">{{ false_positives|default:0 }}</h3>
+                        <p class="card-text">Falsos Positivos</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5 bg-dark">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center mb-5">
+                <h2 class="display-5 fw-bold mb-4">Características Principales</h2>
+                <p class="lead text-muted">
+                    Nuestra plataforma combina datos de misiones espaciales con algoritmos de 
+                    inteligencia artificial para identificar exoplanetas de manera automática.
+                </p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="display-4 text-primary mb-3">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                        <h4 class="card-title">Predicción con IA</h4>
+                        <p class="card-text">
+                            Utiliza algoritmos de machine learning entrenados con datos de 
+                            misiones espaciales para predecir la probabilidad de que un 
+                            candidato sea un exoplaneta real.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="display-4 text-success mb-3">
+                            <i class="bi bi-database"></i>
+                        </div>
+                        <h4 class="card-title">Datos de la NASA</h4>
+                        <p class="card-text">
+                            Accede a datasets completos de las misiones Kepler, K2 y TESS, 
+                            con miles de candidatos a exoplanetas y sus características físicas.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="display-4 text-warning mb-3">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h4 class="card-title">Análisis Visual</h4>
+                        <p class="card-text">
+                            Visualiza patrones en los datos, distribuciones de características 
+                            planetarias y estadísticas de descubrimientos por misión espacial.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Datasets Section -->
+{% if datasets %}
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center mb-5">
+                <h2 class="display-5 fw-bold mb-4">Datasets Disponibles</h2>
+                <p class="lead text-muted">
+                    Explora los datasets de exoplanetas de diferentes misiones espaciales.
+                </p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            {% for dataset in datasets %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-satellite"></i> {{ dataset.mission }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">{{ dataset.name }}</h6>
+                        <p class="card-text">{{ dataset.description|truncatewords:20 }}</p>
+                        <a href="{{ dataset.source_url }}" class="btn btn-outline-light btn-sm" target="_blank">
+                            <i class="bi bi-box-arrow-up-right"></i> Ver Fuente
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{% url 'dataset_list' %}" class="btn btn-primary">
+                <i class="bi bi-list"></i> Ver Todos los Datasets
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Recent Predictions Section -->
+{% if recent_predictions %}
+<section class="py-5 bg-dark">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center mb-5">
+                <h2 class="display-5 fw-bold mb-4">Predicciones Recientes</h2>
+                <p class="lead text-muted">
+                    Últimas predicciones realizadas por nuestro sistema de IA.
+                </p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            {% for prediction in recent_predictions %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h6 class="card-title mb-0">
+                                {{ prediction.input_data.name|default:"Candidato Anónimo" }}
+                            </h6>
+                            <span class="badge badge-{{ prediction.prediction|lower }}">
+                                {{ prediction.get_prediction_display }}
+                            </span>
+                        </div>
+                        <p class="card-text small text-muted">
+                            <i class="bi bi-arrow-up-circle"></i> 
+                            Confianza: {{ prediction.confidence|floatformat:2 }}%
+                        </p>
+                        <p class="card-text small text-muted">
+                            <i class="bi bi-clock"></i> 
+                            {{ prediction.created_at|date:"d/m/Y H:i" }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{% url 'prediction_history' %}" class="btn btn-outline-light">
+                <i class="bi bi-clock-history"></i> Ver Historial Completo
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Call to Action Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h2 class="display-5 fw-bold mb-4">¿Listo para Descubrir?</h2>
+                <p class="lead mb-4">
+                    Únete a la búsqueda de nuevos mundos. Sube tus datos o utiliza nuestro 
+                    formulario para analizar candidatos a exoplanetas.
+                </p>
+                <div class="d-flex flex-wrap justify-content-center gap-3">
+                    <a href="{% url 'prediction_form' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-cpu"></i> Analizar Candidato
+                    </a>
+                    <a href="{% url 'upload_dataset' %}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-upload"></i> Subir Dataset
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animación de contadores
+    function animateCounter(element, target, duration = 2000) {
+        let start = 0;
+        const increment = target / (duration / 16);
+        
+        function updateCounter() {
+            start += increment;
+            if (start < target) {
+                element.textContent = Math.floor(start);
+                requestAnimationFrame(updateCounter);
+            } else {
+                element.textContent = target;
+            }
+        }
+        
+        updateCounter();
+    }
+    
+    // Iniciar animación cuando la página esté cargada
+    document.addEventListener('DOMContentLoaded', function() {
+        const counters = document.querySelectorAll('.stats-card .card-title');
+        counters.forEach(counter => {
+            const target = parseInt(counter.textContent);
+            if (!isNaN(target)) {
+                counter.textContent = '0';
+                animateCounter(counter, target);
+            }
+        });
+    });
+</script>
+{% endblock %}

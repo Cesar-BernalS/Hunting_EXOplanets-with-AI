@@ -1,0 +1,339 @@
+{% extends 'app/base.html' %}
+
+{% block title %}{{ candidate.name }} - Detalle de Candidato{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <h1 class="display-4 fw-bold mb-3">
+                <i class="bi bi-globe text-primary"></i>
+                {{ candidate.name }}
+            </h1>
+            <p class="lead text-muted">
+                Detalles completos del candidato a exoplaneta
+            </p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <div class="btn-group">
+                <a href="{% url 'candidate_list' %}" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+                <button type="button" class="btn btn-primary" onclick="analyzeCandidate()">
+                    <i class="bi bi-cpu"></i> Analizar con IA
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Classification Badge -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="text-center">
+                <span class="badge badge-{{ candidate.classification|lower }} fs-4 px-4 py-2">
+                    {{ candidate.get_classification_display }}
+                </span>
+                {% if candidate.ml_prediction %}
+                    <span class="badge bg-info fs-6 ms-2">
+                        Predicción ML: {{ candidate.get_ml_prediction_display }}
+                        {% if candidate.ml_confidence %}
+                            ({{ candidate.ml_confidence|floatformat:1 }}%)
+                        {% endif %}
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Information -->
+    <div class="row g-4 mb-5">
+        <!-- Physical Characteristics -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-globe"></i> Características Físicas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-primary">{{ candidate.orbital_period|floatformat:2 }}</div>
+                                <small class="text-muted">Período Orbital (días)</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-success">{{ candidate.transit_duration|floatformat:2 }}</div>
+                                <small class="text-muted">Duración del Tránsito (h)</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-warning">{{ candidate.planetary_radius|floatformat:2 }}</div>
+                                <small class="text-muted">Radio Planetario (R⊕)</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-info">{{ candidate.stellar_radius|floatformat:2 }}</div>
+                                <small class="text-muted">Radio Estelar (R☉)</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-danger">{{ candidate.stellar_mass|floatformat:2 }}</div>
+                                <small class="text-muted">Masa Estelar (M☉)</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-light">{{ candidate.stellar_effective_temperature|floatformat:0 }}</div>
+                                <small class="text-muted">Temperatura Estelar (K)</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Transit Parameters -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up"></i> Parámetros de Tránsito
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-primary">{{ candidate.transit_depth|floatformat:6 }}</div>
+                                <small class="text-muted">Profundidad del Tránsito</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-success">{{ candidate.impact_parameter|floatformat:2 }}</div>
+                                <small class="text-muted">Parámetro de Impacto</small>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-center">
+                                <div class="h4 text-warning">{{ candidate.equilibrium_temperature|floatformat:0 }}</div>
+                                <small class="text-muted">Temperatura de Equilibrio (K)</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Additional Information -->
+    <div class="row g-4 mb-5">
+        <!-- Dataset Information -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-database"></i> Información del Dataset
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <strong>Dataset:</strong> {{ candidate.dataset.name }}<br>
+                            <strong>Misión:</strong> {{ candidate.dataset.mission }}<br>
+                            <strong>Descripción:</strong> {{ candidate.dataset.description|truncatewords:20 }}
+                        </div>
+                        <div class="col-12">
+                            <a href="{{ candidate.dataset.source_url }}" 
+                               class="btn btn-outline-light btn-sm" target="_blank">
+                                <i class="bi bi-box-arrow-up-right"></i> Ver Fuente Original
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Identifiers -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-tag"></i> Identificadores
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <strong>Nombre:</strong> {{ candidate.name }}<br>
+                            {% if candidate.koi_id %}
+                                <strong>KOI ID:</strong> {{ candidate.koi_id }}<br>
+                            {% endif %}
+                            {% if candidate.tess_id %}
+                                <strong>TESS ID:</strong> {{ candidate.tess_id }}<br>
+                            {% endif %}
+                            <strong>ID Interno:</strong> {{ candidate.id }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Related Predictions -->
+    {% if predictions %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-cpu"></i> Predicciones Relacionadas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Predicción</th>
+                                    <th>Confianza</th>
+                                    <th>Usuario</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for prediction in predictions %}
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ prediction.created_at|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{{ prediction.prediction|lower }}">
+                                            {{ prediction.get_prediction_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress me-2" style="width: 60px; height: 8px;">
+                                                <div class="progress-bar 
+                                                    {% if prediction.confidence >= 0.8 %}bg-success
+                                                    {% elif prediction.confidence >= 0.6 %}bg-warning
+                                                    {% else %}bg-danger{% endif %}" 
+                                                    style="width: {{ prediction.confidence|floatformat:0 }}%">
+                                                </div>
+                                            </div>
+                                            <small>{{ prediction.confidence|floatformat:1 }}%</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if prediction.user %}
+                                            <span class="text-muted">{{ prediction.user.username }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Anónimo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'prediction_result' prediction.id %}" 
+                                           class="btn btn-outline-light btn-sm" title="Ver resultado">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Metadata -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <small class="text-muted">
+                                <i class="bi bi-calendar-plus"></i><br>
+                                Creado: {{ candidate.created_at|date:"d/m/Y H:i" }}
+                            </small>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">
+                                <i class="bi bi-arrow-clockwise"></i><br>
+                                Actualizado: {{ candidate.updated_at|date:"d/m/Y H:i" }}
+                            </small>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">
+                                <i class="bi bi-hash"></i><br>
+                                ID: {{ candidate.id }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function analyzeCandidate() {
+        // Redirigir al formulario de predicción con datos pre-cargados
+        const candidateData = {
+            name: '{{ candidate.name }}',
+            orbital_period: {{ candidate.orbital_period|default:0 }},
+            transit_duration: {{ candidate.transit_duration|default:0 }},
+            planetary_radius: {{ candidate.planetary_radius|default:0 }},
+            stellar_radius: {{ candidate.stellar_radius|default:0 }},
+            stellar_mass: {{ candidate.stellar_mass|default:0 }},
+            stellar_effective_temperature: {{ candidate.stellar_effective_temperature|default:0 }},
+            transit_depth: {{ candidate.transit_depth|default:0 }},
+            impact_parameter: {{ candidate.impact_parameter|default:0 }},
+            equilibrium_temperature: {{ candidate.equilibrium_temperature|default:0 }}
+        };
+        
+        // Crear formulario temporal para enviar datos
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "prediction_form" %}';
+        
+        // Agregar token CSRF
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken.value;
+            form.appendChild(csrfInput);
+        }
+        
+        // Agregar datos del candidato
+        Object.keys(candidateData).forEach(key => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = candidateData[key];
+            form.appendChild(input);
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+</script>
+{% endblock %}
