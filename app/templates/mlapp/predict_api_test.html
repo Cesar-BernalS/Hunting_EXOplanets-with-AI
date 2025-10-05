@@ -1,0 +1,82 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Probar API de Predicción{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <h1 class="mb-4">Probar API de Predicción</h1>
+  <div class="card">
+    <div class="card-body">
+      <form id="predict-form" class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Período Orbital (días)</label>
+          <input type="number" step="0.001" class="form-control" name="orbital_period" value="100.0" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Duración del Tránsito (horas)</label>
+          <input type="number" step="0.01" class="form-control" name="transit_duration" value="2.5" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Radio Planetario (R⊕)</label>
+          <input type="number" step="0.01" class="form-control" name="planetary_radius" value="1.3" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Radio Estelar (R☉)</label>
+          <input type="number" step="0.01" class="form-control" name="stellar_radius" value="0.7" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Masa Estelar (M☉)</label>
+          <input type="number" step="0.01" class="form-control" name="stellar_mass" value="0.8" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Temp. Efectiva Estelar (K)</label>
+          <input type="number" step="1" class="form-control" name="stellar_effective_temperature" value="4500" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Profundidad del Tránsito</label>
+          <input type="number" step="0.000001" class="form-control" name="transit_depth" value="0.0001" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Parámetro de Impacto</label>
+          <input type="number" step="0.01" class="form-control" name="impact_parameter" value="0.3" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Temp. de Equilibrio (K)</label>
+          <input type="number" step="1" class="form-control" name="equilibrium_temperature" value="250" />
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">Enviar</button>
+        </div>
+      </form>
+      <hr/>
+      <pre id="result" class="bg-dark text-light p-3 rounded" style="min-height: 140px; white-space: pre-wrap"></pre>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('predict-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const data = Object.fromEntries(new FormData(form).entries());
+  for (const k of Object.keys(data)) { data[k] = Number(data[k]); }
+  const resEl = document.getElementById('result');
+  resEl.textContent = 'Enviando...';
+  try {
+    const resp = await fetch('{% url "api_predict" %}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const json = await resp.json();
+    resEl.textContent = JSON.stringify(json, null, 2);
+  } catch (err) {
+    resEl.textContent = 'Error: ' + err.message;
+  }
+});
+</script>
+{% endblock %}
+
+

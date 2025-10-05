@@ -176,9 +176,7 @@
                             {% if candidate.koi_id %}
                                 <strong>KOI ID:</strong> {{ candidate.koi_id }}<br>
                             {% endif %}
-                            {% if candidate.tess_id %}
-                                <strong>TESS ID:</strong> {{ candidate.tess_id }}<br>
-                            {% endif %}
+                            
                             <strong>ID Interno:</strong> {{ candidate.id }}
                         </div>
                     </div>
@@ -224,14 +222,7 @@
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="progress me-2" style="width: 60px; height: 8px;">
-                                                <div class="progress-bar 
-                                                    {% if prediction.confidence >= 0.8 %}bg-success
-                                                    {% elif prediction.confidence >= 0.6 %}bg-warning
-                                                    {% else %}bg-danger{% endif %}" 
-                                                    style="width: {{ prediction.confidence|floatformat:0 }}%">
-                                                </div>
-                                            </div>
+                                            <small class="me-2">Confianza:</small>
                                             <small>{{ prediction.confidence|floatformat:1 }}%</small>
                                         </div>
                                     </td>
@@ -294,46 +285,9 @@
 {% block extra_js %}
 <script>
     function analyzeCandidate() {
-        // Redirigir al formulario de predicción con datos pre-cargados
-        const candidateData = {
-            name: '{{ candidate.name }}',
-            orbital_period: {{ candidate.orbital_period|default:0 }},
-            transit_duration: {{ candidate.transit_duration|default:0 }},
-            planetary_radius: {{ candidate.planetary_radius|default:0 }},
-            stellar_radius: {{ candidate.stellar_radius|default:0 }},
-            stellar_mass: {{ candidate.stellar_mass|default:0 }},
-            stellar_effective_temperature: {{ candidate.stellar_effective_temperature|default:0 }},
-            transit_depth: {{ candidate.transit_depth|default:0 }},
-            impact_parameter: {{ candidate.impact_parameter|default:0 }},
-            equilibrium_temperature: {{ candidate.equilibrium_temperature|default:0 }}
-        };
-        
-        // Crear formulario temporal para enviar datos
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '{% url "prediction_form" %}';
-        
-        // Agregar token CSRF
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-        if (csrfToken) {
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = csrfToken.value;
-            form.appendChild(csrfInput);
-        }
-        
-        // Agregar datos del candidato
-        Object.keys(candidateData).forEach(key => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = key;
-            input.value = candidateData[key];
-            form.appendChild(input);
-        });
-        
-        document.body.appendChild(form);
-        form.submit();
+        // Redirigir a formulario con referencia del candidato
+        const url = '{% url "prediction_form" %}?candidate_id={{ candidate.id }}';
+        window.location.href = url;
     }
 </script>
 {% endblock %}

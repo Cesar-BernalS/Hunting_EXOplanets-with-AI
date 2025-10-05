@@ -11,7 +11,7 @@
                 <i class="bi bi-database text-primary"></i>
                 Datasets de Exoplanetas
             </h1>
-            <p class="lead text-muted">
+            <p class="lead text-white>
                 Explora los datasets disponibles de las misiones espaciales de la NASA.
             </p>
         </div>
@@ -70,14 +70,10 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between">
                             <small class="text-muted">Tasa de Éxito</small>
-                            <small class="text-muted">
-                                {% widthratio stats.confirmed stats.total_candidates 100 %}%
-                            </small>
+                            <small class="text-muted">{{ stats.success_pct }}%</small>
                         </div>
                         <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-success" 
-                                 style="width: {% widthratio stats.confirmed stats.total_candidates 100 %}%">
-                            </div>
+                            <div class="progress-bar bg-success js-progress" data-pct="{{ stats.success_pct }}"></div>
                         </div>
                     </div>
                     {% endif %}
@@ -115,4 +111,15 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.js-progress').forEach(function(el){
+    var pct = el.getAttribute('data-pct');
+    if (pct) { el.style.width = pct + '%'; }
+  });
+});
+</script>
 {% endblock %}

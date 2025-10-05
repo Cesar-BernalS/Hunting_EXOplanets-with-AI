@@ -14,7 +14,7 @@
                 </h1>
                 <p class="lead mb-5">
                     Descubre nuevos mundos más allá de nuestro sistema solar utilizando 
-                    inteligencia artificial y datos de las misiones Kepler, K2 y TESS de la NASA.
+                    inteligencia artificial y datos de la misión Kepler de la NASA.
                 </p>
                 <div class="d-flex flex-wrap justify-content-center gap-3">
                     <a href="{% url 'prediction_form' %}" class="btn btn-primary btn-lg">
@@ -87,7 +87,7 @@
         <div class="row">
             <div class="col-lg-8 mx-auto text-center mb-5">
                 <h2 class="display-5 fw-bold mb-4">Características Principales</h2>
-                <p class="lead text-muted">
+                <p class="lead text-white">
                     Nuestra plataforma combina datos de misiones espaciales con algoritmos de 
                     inteligencia artificial para identificar exoplanetas de manera automática.
                 </p>
@@ -119,7 +119,7 @@
                         </div>
                         <h4 class="card-title">Datos de la NASA</h4>
                         <p class="card-text">
-                            Accede a datasets completos de las misiones Kepler, K2 y TESS, 
+                            Accede a datasets completos de la misión Kepler, 
                             con miles de candidatos a exoplanetas y sus características físicas.
                         </p>
                     </div>
@@ -151,7 +151,7 @@
         <div class="row">
             <div class="col-lg-8 mx-auto text-center mb-5">
                 <h2 class="display-5 fw-bold mb-4">Datasets Disponibles</h2>
-                <p class="lead text-muted">
+                <p class="lead text-white">
                     Explora los datasets de exoplanetas de diferentes misiones espaciales.
                 </p>
             </div>
@@ -167,7 +167,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <h6 class="card-subtitle mb-2 text-muted">{{ dataset.name }}</h6>
+                        <h6 class="card-subtitle mb-2 text-white">{{ dataset.name }}</h6>
                         <p class="card-text">{{ dataset.description|truncatewords:20 }}</p>
                         <a href="{{ dataset.source_url }}" class="btn btn-outline-light btn-sm" target="_blank">
                             <i class="bi bi-box-arrow-up-right"></i> Ver Fuente
@@ -194,7 +194,7 @@
         <div class="row">
             <div class="col-lg-8 mx-auto text-center mb-5">
                 <h2 class="display-5 fw-bold mb-4">Predicciones Recientes</h2>
-                <p class="lead text-muted">
+                <p class="lead text-white">
                     Últimas predicciones realizadas por nuestro sistema de IA.
                 </p>
             </div>
@@ -213,11 +213,11 @@
                                 {{ prediction.get_prediction_display }}
                             </span>
                         </div>
-                        <p class="card-text small text-muted">
+                        <p class="card-text small text-white">
                             <i class="bi bi-arrow-up-circle"></i> 
                             Confianza: {{ prediction.confidence|floatformat:2 }}%
                         </p>
-                        <p class="card-text small text-muted">
+                        <p class="card-text small text-white">
                             <i class="bi bi-clock"></i> 
                             {{ prediction.created_at|date:"d/m/Y H:i" }}
                         </p>

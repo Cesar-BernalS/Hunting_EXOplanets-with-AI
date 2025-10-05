@@ -15,9 +15,11 @@ urlpatterns = [
     
     # Análisis y estadísticas
     path('analytics/', views.analytics_dashboard, name='analytics_dashboard'),
+    path('analytics/test-api/', views.predict_api_test_page, name='predict_api_test_page'),
     
     # Carga de datos
     path('upload/', views.upload_dataset, name='upload_dataset'),
+    path('admin/sync-kepler/', views.sync_kepler_data, name='sync_kepler_data'),
     
     # API endpoints
     path('api/predict/', views.api_predict, name='api_predict'),

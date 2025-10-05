@@ -11,7 +11,7 @@
                 <i class="bi bi-search text-primary"></i>
                 Candidatos a Exoplanetas
             </h1>
-            <p class="lead text-muted">
+            <p class="lead text-white">
                 Explora la base de datos de candidatos a exoplanetas con filtros avanzados.
             </p>
         </div>
@@ -34,17 +34,15 @@
                 <div class="col-md-4">
                     <label for="search" class="form-label">Buscar</label>
                     <input type="text" class="form-control" id="search" name="search" 
-                           value="{{ search_query }}" placeholder="Nombre, KOI ID, TESS ID...">
+                           value="{{ search_query }}" placeholder="Nombre, KOI ID...">
                 </div>
                 <div class="col-md-3">
                     <label for="classification" class="form-label">Clasificación</label>
                     <select class="form-control" id="classification" name="classification">
-                        <option value="">Todas</option>
-                        {% for value, label in classifications %}
-                            <option value="{{ value }}" {% if classification_filter == value %}selected{% endif %}>
-                                {{ label }}
-                            </option>
-                        {% endfor %}
+                        <option value="">Candidatos</option>
+                        <option value="CANDIDATE">Candidatos</option>
+                        <option value="CONFIRMED" {% if classification_filter == 'CONFIRMED' %}selected{% endif %}>Confirmados</option>
+                        <option value="FALSE_POSITIVE" {% if classification_filter == 'FALSE_POSITIVE' %}selected{% endif %}>Falsos Positivos</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -75,7 +73,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">
                 <i class="bi bi-list"></i> Resultados
-                {% if page_obj %}
+                {% if page_obj and page_obj.paginator.count > 0 %}
                     <span class="badge bg-secondary ms-2">{{ page_obj.paginator.count }} candidatos</span>
                 {% endif %}
             </h5>
@@ -86,7 +84,7 @@
             </div>
         </div>
         <div class="card-body p-0">
-            {% if page_obj %}
+            {% if page_obj and page_obj.paginator.count > 0 %}
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-dark">
@@ -109,9 +107,7 @@
                                         {% if candidate.koi_id %}
                                             <br><small class="text-muted">KOI: {{ candidate.koi_id }}</small>
                                         {% endif %}
-                                        {% if candidate.tess_id %}
-                                            <br><small class="text-muted">TESS: {{ candidate.tess_id }}</small>
-                                        {% endif %}
+                                        
                                     </div>
                                 </td>
                                 <td>
@@ -154,8 +150,8 @@
                                            class="btn btn-outline-light" title="Ver detalles">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <button type="button" class="btn btn-outline-primary" 
-                                                onclick="analyzeCandidate({{ candidate.id }})" title="Analizar con IA">
+                                        <button type="button" class="btn btn-outline-primary js-analyze" 
+                                                data-candidate-id="{{ candidate.id }}" title="Analizar con IA">
                                             <i class="bi bi-cpu"></i>
                                         </button>
                                     </div>
@@ -214,9 +210,9 @@
                 {% endif %}
             {% else %}
                 <div class="text-center py-5">
-                    <i class="bi bi-search display-1 text-muted"></i>
-                    <h4 class="text-muted mt-3">No se encontraron candidatos</h4>
-                    <p class="text-muted">Intenta ajustar los filtros de búsqueda.</p>
+                    <i class="bi bi-search display-1 text-white"></i>
+                    <h4 class="text-white mt-3">No se encontraron candidatos</h4>
+                    <p class="text-white">Intenta ajustar los filtros de búsqueda.</p>
                     <a href="{% url 'candidate_list' %}" class="btn btn-primary">
                         <i class="bi bi-arrow-clockwise"></i> Limpiar Filtros
                     </a>
@@ -230,11 +226,7 @@
 {% block extra_js %}
 <script>
     function analyzeCandidate(candidateId) {
-        // Mostrar modal de confirmación
-        if (confirm('¿Deseas analizar este candidato con nuestro modelo de IA?')) {
-            // Redirigir al formulario de predicción con datos pre-cargados
-            window.location.href = `{% url 'prediction_form' %}?candidate_id=${candidateId}`;
-        }
+        window.location.href = `{% url 'prediction_form' %}?candidate_id=${candidateId}`;
     }
     
     function exportToCSV() {
@@ -259,6 +251,14 @@
         selectElements.forEach(select => {
             select.addEventListener('change', function() {
                 filterForm.submit();
+            });
+        });
+
+        // Attach analyze handlers without inline JS
+        document.querySelectorAll('.js-analyze').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-candidate-id');
+                if (id) analyzeCandidate(id);
             });
         });
     });

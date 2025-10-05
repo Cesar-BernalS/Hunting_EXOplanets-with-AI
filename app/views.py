@@ -10,28 +10,90 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils.decorators import method_decorator
 from django.views import View
+from .predictor_adapter import predict_with_kepler_model
 import json
-import requests
 from .models import ExoplanetDataset, ExoplanetCandidate, PredictionRequest, AnalysisSession, UserProfile
+from .predictor_adapter import batch_probability_from_candidates
 from .forms import ExoplanetPredictionForm, DatasetUploadForm, UserRegistrationForm, LoginForm
 import logging
+from pathlib import Path
+import csv
+from django.contrib.admin.views.decorators import staff_member_required
 
 logger = logging.getLogger(__name__)
 
-@login_required
 def index(request):
     """Página principal de la aplicación"""
-    # Estadísticas generales
+    # Estadísticas generales (mezcla: ML y base de datos)
     total_candidates = ExoplanetCandidate.objects.count()
-    confirmed_exoplanets = ExoplanetCandidate.objects.filter(classification='CONFIRMED').count()
+    # ML counters (predicted)
+    predicted_confirmed = 0
+    predicted_false = 0
+    predicted_candidates = 0
+    try:
+        # Predecir sobre todos los candidatos (9k aprox)
+        preds_all = batch_probability_from_candidates(list(ExoplanetCandidate.objects.all()))
+        for p in preds_all:
+            if p.get('label') == 'CONFIRMED':
+                predicted_confirmed += 1
+            elif p.get('label') == 'FALSE_POSITIVE':
+                predicted_false += 1
+        # Anything not falling clearly into confirmed/false is considered candidate for the counter
+        predicted_candidates = max(0, total_candidates - predicted_confirmed - predicted_false)
+    except Exception as e:
+        logger.warning(f"Conteo ML en index falló: {e}")
+    # DB counters (as provided by user data)
     candidates = ExoplanetCandidate.objects.filter(classification='CANDIDATE').count()
-    false_positives = ExoplanetCandidate.objects.filter(classification='FALSE_POSITIVE').count()
+    # Mostrar contadores ML en las tarjetas de Confirmados y Falsos
+    confirmed_exoplanets = predicted_confirmed if predicted_confirmed else ExoplanetCandidate.objects.filter(classification='CONFIRMED').count()
+    false_positives = predicted_false if predicted_false else ExoplanetCandidate.objects.filter(classification='FALSE_POSITIVE').count()
+    candidates = predicted_candidates if (predicted_confirmed or predicted_false) else candidates
+
+    # Fallback 2: derive from original Kepler disposition stored in JSON if still zero
+    if confirmed_exoplanets == 0 and false_positives == 0 and candidates == 0:
+        try:
+            # Case-insensitive and tolerant matching by normalizing values in Python if needed
+            confirmed_exoplanets = ExoplanetCandidate.objects.filter(additional_data__koi_disposition__iexact='CONFIRMED').count()
+            false_positives = ExoplanetCandidate.objects.filter(additional_data__koi_disposition__iexact='FALSE POSITIVE').count()
+            candidates = ExoplanetCandidate.objects.filter(additional_data__koi_disposition__iexact='CANDIDATE').count()
+            # If still zero candidates, compute as complement when dispositions exist
+            if candidates == 0 and (confirmed_exoplanets or false_positives):
+                candidates = max(0, total_candidates - confirmed_exoplanets - false_positives)
+        except Exception as e:
+            logger.warning(f"Conteo por koi_disposition falló: {e}")
+
+    # Fallback 3: if DB has no candidates at all, read counts from kepler_clean.csv directly
+    if total_candidates == 0 and confirmed_exoplanets == 0 and false_positives == 0 and candidates == 0:
+        try:
+            base_dir = Path(__file__).resolve().parent.parent
+            csv_path = (base_dir / 'mlapp' / 'models_store' / 'current' / 'kepler_clean.csv')
+            if not csv_path.exists():
+                csv_path = (base_dir / 'models_store' / 'current' / 'kepler_clean.csv')
+            if csv_path.exists():
+                c_conf = c_fp = c_cand = 0
+                with csv_path.open('r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        disp = (row.get('koi_disposition') or '').strip().upper()
+                        if disp == 'CONFIRMED':
+                            c_conf += 1
+                        elif disp == 'FALSE POSITIVE':
+                            c_fp += 1
+                        elif disp == 'CANDIDATE':
+                            c_cand += 1
+                total_candidates = c_conf + c_fp + c_cand
+                confirmed_exoplanets = c_conf
+                false_positives = c_fp
+                candidates = c_cand
+        except Exception as e:
+            logger.warning(f"Fallback CSV counters falló: {e}")
     
     # Datasets disponibles
     datasets = ExoplanetDataset.objects.filter(is_active=True)
     
-    # Últimas predicciones
-    recent_predictions = PredictionRequest.objects.all()[:5]
+    # Últimas predicciones (solo si existen)
+    recent_predictions_count = PredictionRequest.objects.count()
+    recent_predictions = PredictionRequest.objects.all()[:5] if recent_predictions_count > 0 else None
     
     context = {
         'total_candidates': total_candidates,
@@ -44,22 +106,80 @@ def index(request):
     
     return render(request, 'app/index.html', context)
 
-@login_required
 def dataset_list(request):
     """Lista de datasets disponibles"""
     datasets = ExoplanetDataset.objects.filter(is_active=True)
     
-    # Estadísticas por dataset
+    # Estadísticas por dataset con la misma lógica de la home
     dataset_stats = []
+
+    # Fallback CSV counts by mission (read once)
+    csv_counts_by_mission = {}
+    try:
+        base_dir = Path(__file__).resolve().parent.parent
+        csv_path = (base_dir / 'mlapp' / 'models_store' / 'current' / 'kepler_clean.csv')
+        if not csv_path.exists():
+            csv_path = (base_dir / 'models_store' / 'current' / 'kepler_clean.csv')
+        if csv_path.exists():
+            from collections import defaultdict
+            acc = defaultdict(lambda: {'total': 0, 'CONFIRMED': 0, 'FALSE POSITIVE': 0, 'CANDIDATE': 0})
+            with csv_path.open('r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    mission = (row.get('mission') or 'Kepler').strip()
+                    disp = (row.get('koi_disposition') or '').strip().upper()
+                    acc[mission]['total'] += 1
+                    if disp in ('CONFIRMED', 'FALSE POSITIVE', 'CANDIDATE'):
+                        acc[mission][disp] += 1
+            csv_counts_by_mission = acc
+    except Exception as e:
+        logger.warning(f"CSV counts fallback (datasets) falló: {e}")
     for dataset in datasets:
-        stats = {
+        qs = ExoplanetCandidate.objects.filter(dataset=dataset)
+        total = qs.count()
+        pred_conf = pred_fp = pred_cand = 0
+        try:
+            preds = batch_probability_from_candidates(list(qs[:5000]))  # limitar para seguridad
+            for p in preds:
+                if p.get('label') == 'CONFIRMED':
+                    pred_conf += 1
+                elif p.get('label') == 'FALSE_POSITIVE':
+                    pred_fp += 1
+            pred_cand = max(0, total - pred_conf - pred_fp)
+        except Exception as e:
+            logger.warning(f"Pred count dataset {dataset.id} falló: {e}")
+
+        # BD labels
+        db_conf = qs.filter(classification='CONFIRMED').count()
+        db_cand = qs.filter(classification='CANDIDATE').count()
+        db_fp = qs.filter(classification='FALSE_POSITIVE').count()
+
+        # koi_disposition fallback
+        disp_conf = qs.filter(additional_data__koi_disposition__iexact='CONFIRMED').count()
+        disp_fp = qs.filter(additional_data__koi_disposition__iexact='FALSE POSITIVE').count()
+        disp_cand = qs.filter(additional_data__koi_disposition__iexact='CANDIDATE').count()
+
+        # Resolver con prioridad: ML -> BD -> koi_disposition
+        confirmed = pred_conf or db_conf or disp_conf
+        false_pos = pred_fp or db_fp or disp_fp
+        candidates_cnt = (pred_cand if (pred_conf or pred_fp) else (db_cand or disp_cand))
+
+        # Fallback CSV per mission if DB has zero total
+        if total == 0 and dataset.mission in csv_counts_by_mission:
+            m = csv_counts_by_mission[dataset.mission]
+            total = m['total']
+            confirmed = m['CONFIRMED']
+            false_pos = m['FALSE POSITIVE']
+            candidates_cnt = m['CANDIDATE']
+
+        dataset_stats.append({
             'dataset': dataset,
-            'total_candidates': ExoplanetCandidate.objects.filter(dataset=dataset).count(),
-            'confirmed': ExoplanetCandidate.objects.filter(dataset=dataset, classification='CONFIRMED').count(),
-            'candidates': ExoplanetCandidate.objects.filter(dataset=dataset, classification='CANDIDATE').count(),
-            'false_positives': ExoplanetCandidate.objects.filter(dataset=dataset, classification='FALSE_POSITIVE').count(),
-        }
-        dataset_stats.append(stats)
+            'total_candidates': total,
+            'confirmed': confirmed,
+            'candidates': candidates_cnt,
+            'false_positives': false_pos,
+            'success_pct': int(round((confirmed / total) * 100)) if total > 0 else 0,
+        })
     
     context = {
         'dataset_stats': dataset_stats,
@@ -67,54 +187,72 @@ def dataset_list(request):
     
     return render(request, 'app/dataset_list.html', context)
 
-@login_required
 def candidate_list(request):
-    """Lista de candidatos a exoplanetas con filtros"""
+    """Lista de candidatos a exoplanetas con filtros opcionales y paginación (10 por página)."""
     candidates = ExoplanetCandidate.objects.all()
-    
-    # Filtros
-    search_query = request.GET.get('search', '')
-    classification_filter = request.GET.get('classification', '')
-    dataset_filter = request.GET.get('dataset', '')
-    
+
+    # Filtros opcionales
+    search_query = request.GET.get('search', '').strip()
+    classification_filter = request.GET.get('classification', '').strip()
+    dataset_filter = request.GET.get('dataset', '').strip()
+
+    if dataset_filter:
+        candidates = candidates.filter(dataset_id=dataset_filter)
+
+    if classification_filter:
+        candidates = candidates.filter(classification=classification_filter)
+    else:
+        # Por defecto mostrar solo CANDIDATE si no se especifica clasificación explícita
+        candidates = candidates.filter(
+            Q(classification__iexact='CANDIDATE') |
+            Q(additional_data__koi_disposition__icontains='CANDIDATE') |
+            Q(ml_prediction__iexact='CANDIDATE')
+        )
+
     if search_query:
         candidates = candidates.filter(
             Q(name__icontains=search_query) |
             Q(koi_id__icontains=search_query) |
             Q(tess_id__icontains=search_query)
         )
-    
-    if classification_filter:
-        candidates = candidates.filter(classification=classification_filter)
-    
-    if dataset_filter:
-        candidates = candidates.filter(dataset_id=dataset_filter)
-    
-    # Paginación
-    paginator = Paginator(candidates, 20)
+
+    candidates = candidates.order_by('-created_at').distinct()
+
+    paginator = Paginator(candidates, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
-    # Opciones para filtros
+
+    # Opciones para filtros (solo lo necesario)
     datasets = ExoplanetDataset.objects.filter(is_active=True)
-    classifications = ExoplanetCandidate.CLASSIFICATION_CHOICES
-    
+
     context = {
         'page_obj': page_obj,
-        'search_query': search_query,
-        'classification_filter': classification_filter,
-        'dataset_filter': dataset_filter,
         'datasets': datasets,
-        'classifications': classifications,
     }
-    
+
     return render(request, 'app/candidate_list.html', context)
 
-@login_required
 def candidate_detail(request, candidate_id):
     """Detalle de un candidato específico"""
     candidate = get_object_or_404(ExoplanetCandidate, id=candidate_id)
-    
+    # Predicción rápida para mostrar en cabecera (no persistente)
+    try:
+        from .predictor_adapter import predict_with_kepler_model
+        label, prob, details = predict_with_kepler_model({
+            'orbital_period': candidate.orbital_period,
+            'transit_duration': candidate.transit_duration,
+            'transit_depth': candidate.transit_depth,
+            'stellar_effective_temperature': candidate.stellar_effective_temperature,
+            'planetary_radius': candidate.planetary_radius,
+            'stellar_radius': candidate.stellar_radius,
+            'equilibrium_temperature': candidate.equilibrium_temperature,
+            'impact_parameter': candidate.impact_parameter,
+        })
+        candidate.ml_prediction = label
+        candidate.ml_confidence = float(prob) * 100.0
+    except Exception as e:
+        logger.warning(f"Predicción ML en detalle falló: {e}")
+
     # Obtener predicciones relacionadas
     predictions = PredictionRequest.objects.filter(
         input_data__contains={'name': candidate.name}
@@ -133,40 +271,33 @@ def prediction_form(request):
     if request.method == 'POST':
         form = ExoplanetPredictionForm(request.POST)
         if form.is_valid():
-            # Aquí se conectaría con la API externa
-            # Por ahora simulamos la respuesta
+            # Construir features y predecir con el modelo local de Kepler
             prediction_data = form.cleaned_data
-            
-            # Simular llamada a API externa
             try:
-                # TODO: Reemplazar con la URL real de la API
-                api_url = "https://your-api-endpoint.com/predict"
-                
-                # Simular respuesta de la API
-                mock_response = {
-                    'prediction': 'CONFIRMED',
-                    'confidence': 0.85,
-                    'details': {
-                        'probability_confirmed': 0.85,
-                        'probability_candidate': 0.10,
-                        'probability_false_positive': 0.05
-                    }
-                }
-                
-                # Guardar solicitud de predicción
+                label, prob, details = predict_with_kepler_model({
+                    'orbital_period': prediction_data.get('orbital_period'),
+                    'transit_duration': prediction_data.get('transit_duration'),
+                    'transit_depth': prediction_data.get('transit_depth'),
+                    'stellar_effective_temperature': prediction_data.get('stellar_effective_temperature'),
+                    'planetary_radius': prediction_data.get('planetary_radius'),
+                    'stellar_radius': prediction_data.get('stellar_radius'),
+                    'equilibrium_temperature': prediction_data.get('equilibrium_temperature'),
+                    'impact_parameter': prediction_data.get('impact_parameter'),
+                })
+
                 prediction_request = PredictionRequest.objects.create(
                     user=request.user if request.user.is_authenticated else None,
                     input_data=prediction_data,
-                    prediction=mock_response['prediction'],
-                    confidence=mock_response['confidence'],
-                    prediction_details=mock_response['details'],
-                    api_endpoint=api_url,
-                    api_response=mock_response
+                    prediction=label,
+                    confidence=prob,
+                    prediction_details=details,
+                    api_endpoint='local-ml-model',
+                    api_response={'prediction': label, 'confidence': prob, 'details': details}
                 )
-                
-                messages.success(request, f'Predicción realizada: {mock_response["prediction"]} (Confianza: {mock_response["confidence"]:.2%})')
+
+                messages.success(request, f'Predicción realizada: {label} (Confianza: {prob:.2%})')
                 return redirect('prediction_result', prediction_id=prediction_request.id)
-                
+
             except Exception as e:
                 logger.error(f"Error en predicción: {str(e)}")
                 messages.error(request, 'Error al realizar la predicción. Inténtalo de nuevo.')
@@ -179,7 +310,6 @@ def prediction_form(request):
     
     return render(request, 'app/prediction_form.html', context)
 
-@login_required
 def prediction_result(request, prediction_id):
     """Resultado de una predicción"""
     prediction = get_object_or_404(PredictionRequest, id=prediction_id)
@@ -190,7 +320,6 @@ def prediction_result(request, prediction_id):
     
     return render(request, 'app/prediction_result.html', context)
 
-@login_required
 def prediction_history(request):
     """Historial de predicciones"""
     predictions = PredictionRequest.objects.all()
@@ -218,18 +347,32 @@ def prediction_history(request):
     
     return render(request, 'app/prediction_history.html', context)
 
-@login_required
 def analytics_dashboard(request):
     """Dashboard de análisis y estadísticas"""
-    # Estadísticas generales
-    total_candidates = ExoplanetCandidate.objects.count()
-    confirmed_count = ExoplanetCandidate.objects.filter(classification='CONFIRMED').count()
-    candidate_count = ExoplanetCandidate.objects.filter(classification='CANDIDATE').count()
-    false_positive_count = ExoplanetCandidate.objects.filter(classification='FALSE_POSITIVE').count()
+    # Estadísticas generales (mezcla ML/BD/disposition)
+    qs_all = ExoplanetCandidate.objects.all()
+    total_candidates = qs_all.count()
+
+    # ML counts
+    ml_conf = ml_fp = 0
+    try:
+        preds = batch_probability_from_candidates(list(qs_all[:9000]))
+        for p in preds:
+            if p.get('label') == 'CONFIRMED':
+                ml_conf += 1
+            elif p.get('label') == 'FALSE_POSITIVE':
+                ml_fp += 1
+    except Exception as e:
+        logger.warning(f"Analítica ML falló: {e}")
+
+    # DB/disposition fallback
+    confirmed_count = ml_conf or qs_all.filter(classification='CONFIRMED').count() or qs_all.filter(additional_data__koi_disposition__iexact='CONFIRMED').count()
+    false_positive_count = ml_fp or qs_all.filter(classification='FALSE_POSITIVE').count() or qs_all.filter(additional_data__koi_disposition__iexact='FALSE POSITIVE').count()
+    candidate_count = max(0, total_candidates - confirmed_count - false_positive_count)
     
-    # Estadísticas por misión
+    # Estadísticas por misión (solo Kepler)
     mission_stats = []
-    for mission in ['Kepler', 'K2', 'TESS']:
+    for mission in ['Kepler']:
         datasets = ExoplanetDataset.objects.filter(mission=mission, is_active=True)
         candidates = ExoplanetCandidate.objects.filter(dataset__in=datasets)
         
@@ -242,14 +385,10 @@ def analytics_dashboard(request):
         })
     
     # Distribución de períodos orbitales
-    orbital_periods = ExoplanetCandidate.objects.filter(
-        orbital_period__isnull=False
-    ).values_list('orbital_period', flat=True)
+    orbital_periods = list(qs_all.filter(orbital_period__isnull=False).values_list('orbital_period', flat=True)[:5000])
     
     # Distribución de radios planetarios
-    planetary_radii = ExoplanetCandidate.objects.filter(
-        planetary_radius__isnull=False
-    ).values_list('planetary_radius', flat=True)
+    planetary_radii = list(qs_all.filter(planetary_radius__isnull=False).values_list('planetary_radius', flat=True)[:5000])
     
     context = {
         'total_candidates': total_candidates,
@@ -257,11 +396,44 @@ def analytics_dashboard(request):
         'candidate_count': candidate_count,
         'false_positive_count': false_positive_count,
         'mission_stats': mission_stats,
-        'orbital_periods': list(orbital_periods),
-        'planetary_radii': list(planetary_radii),
+        'orbital_periods': orbital_periods,
+        'planetary_radii': planetary_radii,
     }
+
+    # CSV fallback if everything is zero
+    if total_candidates == 0 and confirmed_count == 0 and candidate_count == 0 and false_positive_count == 0:
+        try:
+            base_dir = Path(__file__).resolve().parent.parent
+            csv_path = (base_dir / 'mlapp' / 'models_store' / 'current' / 'kepler_clean.csv')
+            if not csv_path.exists():
+                csv_path = (base_dir / 'models_store' / 'current' / 'kepler_clean.csv')
+            if csv_path.exists():
+                import pandas as pd
+                df = pd.read_csv(csv_path)
+                disp = df['koi_disposition'].str.upper().fillna('')
+                total_candidates = int(len(df))
+                confirmed_count = int((disp == 'CONFIRMED').sum())
+                false_positive_count = int((disp == 'FALSE POSITIVE').sum())
+                candidate_count = max(0, total_candidates - confirmed_count - false_positive_count)
+                context.update({
+                    'total_candidates': total_candidates,
+                    'confirmed_count': confirmed_count,
+                    'candidate_count': candidate_count,
+                    'false_positive_count': false_positive_count,
+                    'mission_stats': [{'mission': 'Kepler', 'total': total_candidates, 'confirmed': confirmed_count, 'candidates': candidate_count, 'false_positives': false_positive_count}],
+                    'orbital_periods': df['koi_period'].dropna().tolist()[:5000] if 'koi_period' in df.columns else [],
+                    'planetary_radii': df['koi_prad'].dropna().tolist()[:5000] if 'koi_prad' in df.columns else [],
+                })
+        except Exception as e:
+            logger.warning(f"CSV fallback en dashboard falló: {e}")
     
-    return render(request, 'app/analytics_dashboard.html', context)
+    return render(request, 'mlapp/dashboard.html', context)
+
+
+@login_required
+def predict_api_test_page(request):
+    """Página simple para probar el endpoint de predicción via fetch."""
+    return render(request, 'mlapp/predict_api_test.html')
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -281,19 +453,23 @@ def api_predict(request):
             if field not in data:
                 return JsonResponse({'error': f'Campo requerido faltante: {field}'}, status=400)
         
-        # TODO: Conectar con la API externa real
-        # Por ahora simulamos la respuesta
-        mock_response = {
-            'prediction': 'CONFIRMED',
-            'confidence': 0.85,
-            'details': {
-                'probability_confirmed': 0.85,
-                'probability_candidate': 0.10,
-                'probability_false_positive': 0.05
-            }
-        }
-        
-        return JsonResponse(mock_response)
+        # Ejecutar predicción con el modelo local
+        label, prob, details = predict_with_kepler_model({
+            'orbital_period': data.get('orbital_period'),
+            'transit_duration': data.get('transit_duration'),
+            'transit_depth': data.get('transit_depth'),
+            'stellar_effective_temperature': data.get('stellar_effective_temperature'),
+            'planetary_radius': data.get('planetary_radius'),
+            'stellar_radius': data.get('stellar_radius'),
+            'equilibrium_temperature': data.get('equilibrium_temperature'),
+            'impact_parameter': data.get('impact_parameter'),
+        })
+
+        return JsonResponse({
+            'prediction': label,
+            'confidence': prob,
+            'details': details,
+        })
         
     except json.JSONDecodeError:
         return JsonResponse({'error': 'JSON inválido'}, status=400)
@@ -328,6 +504,32 @@ def upload_dataset(request):
     }
     
     return render(request, 'app/upload_dataset.html', context)
+
+
+@login_required
+@staff_member_required
+def sync_kepler_data(request):
+    """Sincroniza el dataset Kepler desde models_store/current al DB y rellena ML.
+
+    Solo personal (staff). No cambia nada innecesario.
+    """
+    try:
+        from app.management.commands.import_kepler_clean import Command as ImportCmd
+        from app.management.commands.backfill_kepler_predictions import Command as BackfillCmd
+
+        # Importar (no truncamos por defecto)
+        import_cmd = ImportCmd()
+        import_cmd.handle(truncate=False, limit=None)
+
+        # Backfill solo donde falte
+        backfill_cmd = BackfillCmd()
+        backfill_cmd.handle(missing_only=True, limit=None)
+
+        messages.success(request, 'Sincronización de Kepler completada correctamente.')
+    except Exception as e:
+        logger.error(f"Sync Kepler falló: {e}")
+        messages.error(request, f'Error al sincronizar Kepler: {e}')
+    return redirect('dataset_list')
 
 def user_login(request):
     """Vista de inicio de sesión"""

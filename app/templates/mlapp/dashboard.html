@@ -1,0 +1,318 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Dashboard de Análisis - ExoPlanet AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <h1 class="display-4 fw-bold mb-3">
+                <i class="bi bi-graph-up text-primary"></i>
+                Dashboard de Análisis
+            </h1>
+            <p class="lead text-muted">
+                Estadísticas y visualizaciones de los datos de exoplanetas.
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3 col-sm-6">
+            <div class="card stats-card text-center h-100">
+                <div class="card-body">
+                    <div class="display-4 text-primary mb-3">
+                        <i class="bi bi-globe"></i>
+                    </div>
+                    <h3 class="card-title">{{ total_candidates|default:0 }}</h3>
+                    <p class="card-text">Total Candidatos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card stats-card text-center h-100">
+                <div class="card-body">
+                    <div class="display-4 text-success mb-3">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <h3 class="card-title">{{ confirmed_count|default:0 }}</h3>
+                    <p class="card-text">Confirmados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card stats-card text-center h-100">
+                <div class="card-body">
+                    <div class="display-4 text-warning mb-3">
+                        <i class="bi bi-question-circle"></i>
+                    </div>
+                    <h3 class="card-title">{{ candidate_count|default:0 }}</h3>
+                    <p class="card-text">Candidatos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card stats-card text-center h-100">
+                <div class="card-body">
+                    <div class="display-4 text-danger mb-3">
+                        <i class="bi bi-x-circle"></i>
+                    </div>
+                    <h3 class="card-title">{{ false_positive_count|default:0 }}</h3>
+                    <p class="card-text">Falsos Positivos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pie-chart"></i> Distribución de Clasificaciones
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="classificationChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bar-chart"></i> Estadísticas por Misión
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="missionChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up"></i> Distribución de Períodos Orbitales
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="orbitalPeriodChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-circle"></i> Distribución de Radios Planetarios
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="radiusChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if mission_stats %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-table"></i> Detalles por Misión
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Misión</th>
+                                    <th>Total</th>
+                                    <th>Confirmados</th>
+                                    <th>Candidatos</th>
+                                    <th>Falsos Positivos</th>
+                                    <th>Tasa de Éxito</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mission in mission_stats %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-info">{{ mission.mission }}</span>
+                                    </td>
+                                    <td>{{ mission.total }}</td>
+                                    <td>
+                                        <span class="text-success">{{ mission.confirmed }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-warning">{{ mission.candidates }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-danger">{{ mission.false_positives }}</span>
+                                    </td>
+                                    <td>
+                                        {% if mission.total > 0 %}
+                                            {% widthratio mission.confirmed mission.total 100 %}%
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if top_no_planets %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-table"></i> Top 10 no-planetas (probabilidad más baja)
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>object_id</th>
+                                    <th>kepoi_name</th>
+                                    <th>kepler_name</th>
+                                    <th>kepid</th>
+                                    <th>koi_disposition</th>
+                                    <th class="text-center">probability</th>
+                                    <th>koi_period</th>
+                                    <th>koi_duration</th>
+                                    <th>koi_depth</th>
+                                    <th>koi_model_snr</th>
+                                    <th>duty_cycle</th>
+                                    <th>koi_prad</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in top_no_planets %}
+                                <tr>
+                                    <td>{{ r.object_id|default:"-" }}</td>
+                                    <td>{{ r.kepoi_name|default:"-" }}</td>
+                                    <td>{{ r.kepler_name|default:"-" }}</td>
+                                    <td>{{ r.kepid|default:"-" }}</td>
+                                    <td>{{ r.koi_disposition|default:"-" }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger">{{ r.probability|floatformat:6 }}</span>
+                                    </td>
+                                    <td>{{ r.koi_period|default:"-" }}</td>
+                                    <td>{{ r.koi_duration|default:"-" }}</td>
+                                    <td>{{ r.koi_depth|default:"-" }}</td>
+                                    <td>{{ r.koi_model_snr|default:"-" }}</td>
+                                    <td>{{ r.duty_cycle|default:"-" }}</td>
+                                    <td>{{ r.koi_prad|default:"-" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classificationCtx = document.getElementById('classificationChart').getContext('2d');
+    new Chart(classificationCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Confirmados', 'Candidatos', 'Falsos Positivos'],
+            datasets: [{
+                data: [
+                    {{ confirmed_count|default:0 }},
+                    {{ candidate_count|default:0 }},
+                    {{ false_positive_count|default:0 }}
+                ],
+                backgroundColor: ['#28a745','#ffc107','#dc3545'],
+                borderWidth: 2,
+                borderColor: '#1a1a2e'
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    const missionCtx = document.getElementById('missionChart').getContext('2d');
+    const missionData = {{ mission_stats|safe }};
+    if (missionData && missionData.length > 0) {
+        new Chart(missionCtx, {
+            type: 'bar',
+            data: {
+                labels: missionData.map(m => m.mission),
+                datasets: [
+                    { label: 'Confirmados', data: missionData.map(m => m.confirmed), backgroundColor: '#28a745', borderColor: '#28a745', borderWidth: 1 },
+                    { label: 'Candidatos', data: missionData.map(m => m.candidates), backgroundColor: '#ffc107', borderColor: '#ffc107', borderWidth: 1 },
+                    { label: 'Falsos Positivos', data: missionData.map(m => m.false_positives), backgroundColor: '#dc3545', borderColor: '#dc3545', borderWidth: 1 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    const orbitalPeriodCtx = document.getElementById('orbitalPeriodChart').getContext('2d');
+    const orbitalPeriods = {{ orbital_periods|safe }};
+    if (orbitalPeriods && orbitalPeriods.length > 0) {
+        const bins = 20;
+        const min = Math.min(...orbitalPeriods);
+        const max = Math.max(...orbitalPeriods);
+        const binSize = (max - min) / bins;
+        const histogram = new Array(bins).fill(0);
+        orbitalPeriods.forEach(period => {
+            const idx = Math.min(Math.floor((period - min) / binSize), bins - 1);
+            histogram[idx]++;
+        });
+        const binLabels = Array.from({length: bins}, (_, i) => (min + i * binSize).toFixed(1) + '-' + (min + (i + 1) * binSize).toFixed(1));
+        new Chart(orbitalPeriodCtx, {
+            type: 'bar',
+            data: { labels: binLabels, datasets: [{ label: 'Número de Candidatos', data: histogram, backgroundColor: 'rgba(233,69,96,0.6)', borderColor: '#e94560', borderWidth: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    const radiusCtx = document.getElementById('radiusChart').getContext('2d');
+    const planetaryRadii = {{ planetary_radii|safe }};
+    if (planetaryRadii && planetaryRadii.length > 0) {
+        const bins = 15;
+        const min = Math.min(...planetaryRadii);
+        const max = Math.max(...planetaryRadii);
+        const binSize = (max - min) / bins;
+        const histogram = new Array(bins).fill(0);
+        planetaryRadii.forEach(radius => {
+            const idx = Math.min(Math.floor((radius - min) / binSize), bins - 1);
+            histogram[idx]++;
+        });
+        const binLabels = Array.from({length: bins}, (_, i) => (min + i * binSize).toFixed(1) + '-' + (min + (i + 1) * binSize).toFixed(1));
+        new Chart(radiusCtx, {
+            type: 'bar',
+            data: { labels: binLabels, datasets: [{ label: 'Número de Candidatos', data: histogram, backgroundColor: 'rgba(15,52,96,0.6)', borderColor: '#0f3460', borderWidth: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+});
+</script>
+{% endblock %}
+
+
